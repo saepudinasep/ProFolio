@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreTeamMemberRequest;
+use App\Http\Requests\UpdateTeamMemberRequest;
 use App\Models\TeamMember;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,17 +29,9 @@ class TeamMemberController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreTeamMemberRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'position' => ['required', 'string', 'max:255'],
-            'bio' => ['nullable', 'string'],
-            'photo' => ['nullable', 'string', 'max:255'],
-            'social_links' => ['nullable', 'array'],
-        ]);
-
-        $teamMember = TeamMember::create($validated);
+        $teamMember = TeamMember::create($request->validated());
 
         return response()->json([
             'success' => true,
@@ -61,17 +55,9 @@ class TeamMemberController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, TeamMember $teamMember): JsonResponse
+    public function update(UpdateTeamMemberRequest $request, TeamMember $teamMember): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'position' => ['required', 'string', 'max:255'],
-            'bio' => ['nullable', 'string'],
-            'photo' => ['nullable', 'string', 'max:255'],
-            'social_links' => ['nullable', 'array'],
-        ]);
-
-        $teamMember->update($validated);
+        $teamMember->update($request->validated());
 
         return response()->json([
             'success' => true,

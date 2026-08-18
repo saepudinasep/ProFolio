@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePageRequest;
+use App\Http\Requests\UpdatePageRequest;
 use App\Models\Page;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,17 +28,9 @@ class PageController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StorePageRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'slug' => ['required', 'string', 'max:255', 'unique:pages,slug'],
-            'title' => ['required', 'string', 'max:255'],
-            'content' => ['required', 'string'],
-            'meta_title' => ['nullable', 'string', 'max:255'],
-            'meta_description' => ['nullable', 'string'],
-        ]);
-
-        $page = Page::create($validated);
+        $page = Page::create($request->validated());
 
         return response()->json([
             'success' => true,
@@ -60,22 +54,9 @@ class PageController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Page $page): JsonResponse
+    public function update(UpdatePageRequest $request, Page $page): JsonResponse
     {
-        $validated = $request->validate([
-            'slug' => [
-                'required',
-                'string',
-                'max:255',
-                'unique:pages,slug,' . $page->id,
-            ],
-            'title' => ['required', 'string', 'max:255'],
-            'content' => ['required', 'string'],
-            'meta_title' => ['nullable', 'string', 'max:255'],
-            'meta_description' => ['nullable', 'string'],
-        ]);
-
-        $page->update($validated);
+        $page->update($request->validated());
 
         return response()->json([
             'success' => true,

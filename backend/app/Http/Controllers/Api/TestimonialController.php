@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreTestimonialRequest;
+use App\Http\Requests\UpdateTestimonialRequest;
 use App\Models\Testimonial;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,18 +28,9 @@ class TestimonialController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreTestimonialRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'client_name' => ['required', 'string', 'max:255'],
-            'client_position' => ['nullable', 'string', 'max:255'],
-            'company' => ['nullable', 'string', 'max:255'],
-            'photo' => ['nullable', 'string', 'max:255'],
-            'message' => ['required', 'string'],
-            'rating' => ['nullable', 'integer', 'min:1', 'max:5'],
-        ]);
-
-        $testimonial = Testimonial::create($validated);
+        $testimonial = Testimonial::create($request->validated());
 
         return response()->json([
             'success' => true,
@@ -61,18 +54,9 @@ class TestimonialController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Testimonial $testimonial): JsonResponse
+    public function update(UpdateTestimonialRequest $request, Testimonial $testimonial): JsonResponse
     {
-        $validated = $request->validate([
-            'client_name' => ['required', 'string', 'max:255'],
-            'client_position' => ['nullable', 'string', 'max:255'],
-            'company' => ['nullable', 'string', 'max:255'],
-            'photo' => ['nullable', 'string', 'max:255'],
-            'message' => ['required', 'string'],
-            'rating' => ['nullable', 'integer', 'min:1', 'max:5'],
-        ]);
-
-        $testimonial->update($validated);
+        $testimonial->update($request->validated());
 
         return response()->json([
             'success' => true,

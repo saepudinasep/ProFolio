@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreServiceRequest;
+use App\Http\Requests\UpdateServiceRequest;
 use App\Models\Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,16 +28,9 @@ class ServiceController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreServiceRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string'],
-            'icon' => ['nullable', 'string', 'max:255'],
-            'order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $service = Service::create($validated);
+        $service = Service::create($request->validated());
 
         return response()->json([
             'success' => true,
@@ -59,16 +54,9 @@ class ServiceController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Service $service): JsonResponse
+    public function update(UpdateServiceRequest $request, Service $service): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string'],
-            'icon' => ['nullable', 'string', 'max:255'],
-            'order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $service->update($validated);
+        $service->update($request->validated());
 
         return response()->json([
             'success' => true,

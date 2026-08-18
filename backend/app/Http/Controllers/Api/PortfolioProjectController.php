@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePortfolioProjectRequest;
+use App\Http\Requests\UpdatePortfolioProjectRequest;
 use App\Models\PortfolioProject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,19 +28,9 @@ class PortfolioProjectController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StorePortfolioProjectRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:portfolio_projects,slug'],
-            'category' => ['required', 'string', 'max:255'],
-            'client' => ['nullable', 'string', 'max:255'],
-            'description' => ['required', 'string'],
-            'thumbnail' => ['required', 'string', 'max:255'],
-            'project_url' => ['nullable', 'url', 'max:255'],
-        ]);
-
-        $project = PortfolioProject::create($validated);
+        $project = PortfolioProject::create($request->validated());
 
         return response()->json([
             'success' => true,
@@ -62,24 +54,9 @@ class PortfolioProjectController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, PortfolioProject $portfolioProject): JsonResponse
+    public function update(UpdatePortfolioProjectRequest $request, PortfolioProject $portfolioProject): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'slug' => [
-                'required',
-                'string',
-                'max:255',
-                'unique:portfolio_projects,slug,' . $portfolioProject->id,
-            ],
-            'category' => ['required', 'string', 'max:255'],
-            'client' => ['nullable', 'string', 'max:255'],
-            'description' => ['required', 'string'],
-            'thumbnail' => ['required', 'string', 'max:255'],
-            'project_url' => ['nullable', 'url', 'max:255'],
-        ]);
-
-        $portfolioProject->update($validated);
+        $portfolioProject->update($request->validated());
 
         return response()->json([
             'success' => true,
