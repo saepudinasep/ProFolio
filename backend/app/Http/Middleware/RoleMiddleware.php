@@ -25,6 +25,7 @@ class RoleMiddleware
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated.',
+                'errors' => null,
             ], 401);
         }
 
@@ -32,6 +33,7 @@ class RoleMiddleware
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk mengakses resource ini.',
+                'errors' => null,
             ], 403);
         }
 
