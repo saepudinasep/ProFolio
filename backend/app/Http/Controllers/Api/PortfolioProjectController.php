@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePortfolioProjectRequest;
 use App\Http\Requests\UpdatePortfolioProjectRequest;
+use App\Http\Resources\PortfolioProjectResource;
 use App\Models\PortfolioProject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class PortfolioProjectController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Portfolio projects retrieved successfully.',
-            'data' => $projects,
+            'data' => PortfolioProjectResource::collection($projects),
         ]);
     }
 
@@ -35,7 +36,7 @@ class PortfolioProjectController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Portfolio project created successfully.',
-            'data' => $project,
+            'data' => new PortfolioProjectResource($project),
         ], 201);
     }
 
@@ -47,7 +48,7 @@ class PortfolioProjectController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Portfolio project retrieved successfully.',
-            'data' => $portfolioProject,
+            'data' => new PortfolioProjectResource($portfolioProject),
         ]);
     }
 
@@ -61,7 +62,7 @@ class PortfolioProjectController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Portfolio project updated successfully.',
-            'data' => $portfolioProject->fresh(),
+            'data' => new PortfolioProjectResource($portfolioProject->fresh()),
         ]);
     }
 
@@ -75,6 +76,7 @@ class PortfolioProjectController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Portfolio project deleted successfully.',
+            'data' => null,
         ]);
     }
 }

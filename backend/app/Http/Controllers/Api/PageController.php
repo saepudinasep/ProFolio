@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePageRequest;
 use App\Http\Requests\UpdatePageRequest;
+use App\Http\Resources\PageResource;
 use App\Models\Page;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class PageController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Pages retrieved successfully.',
-            'data' => $pages,
+            'data' => PageResource::collection($pages),
         ]);
     }
 
@@ -35,7 +36,7 @@ class PageController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Page created successfully.',
-            'data' => $page,
+            'data' => new PageResource($page),
         ], 201);
     }
 
@@ -47,7 +48,7 @@ class PageController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Page retrieved successfully.',
-            'data' => $page,
+            'data' => new PageResource($page),
         ]);
     }
 
@@ -61,7 +62,7 @@ class PageController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Page updated successfully.',
-            'data' => $page->fresh(),
+            'data' => new PageResource($page->fresh()),
         ]);
     }
 
@@ -75,6 +76,7 @@ class PageController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Page deleted successfully.',
+            'data' => null,
         ]);
     }
 }

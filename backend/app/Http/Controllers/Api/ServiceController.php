@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreServiceRequest;
 use App\Http\Requests\UpdateServiceRequest;
+use App\Http\Resources\ServiceResource;
 use App\Models\Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class ServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Services retrieved successfully.',
-            'data' => $services,
+            'data' => ServiceResource::collection($services),
         ]);
     }
 
@@ -35,7 +36,7 @@ class ServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Service created successfully.',
-            'data' => $service,
+            'data' => new ServiceResource($service),
         ], 201);
     }
 
@@ -47,7 +48,7 @@ class ServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Service retrieved successfully.',
-            'data' => $service,
+            'data' => new ServiceResource($service),
         ]);
     }
 
@@ -61,7 +62,7 @@ class ServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Service updated successfully.',
-            'data' => $service->fresh(),
+            'data' => new ServiceResource($service->fresh()),
         ]);
     }
 
@@ -75,6 +76,7 @@ class ServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Service deleted successfully.',
+            'data' => null,
         ]);
     }
 }

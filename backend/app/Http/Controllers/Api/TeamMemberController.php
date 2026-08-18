@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTeamMemberRequest;
 use App\Http\Requests\UpdateTeamMemberRequest;
+use App\Http\Resources\TeamMemberResource;
 use App\Models\TeamMember;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class TeamMemberController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Team members retrieved successfully.',
-            'data' => $teamMembers,
+            'data' => TeamMemberResource::collection($teamMembers),
         ]);
     }
 
@@ -36,7 +37,7 @@ class TeamMemberController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Team member created successfully.',
-            'data' => $teamMember,
+            'data' => new TeamMemberResource($teamMember),
         ], 201);
     }
 
@@ -48,7 +49,7 @@ class TeamMemberController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Team member retrieved successfully.',
-            'data' => $teamMember,
+            'data' => new TeamMemberResource($teamMember),
         ]);
     }
 
@@ -62,7 +63,7 @@ class TeamMemberController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Team member updated successfully.',
-            'data' => $teamMember->fresh(),
+            'data' => new TeamMemberResource($teamMember->fresh()),
         ]);
     }
 
@@ -76,6 +77,7 @@ class TeamMemberController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Team member deleted successfully.',
+            'data' => null,
         ]);
     }
 }

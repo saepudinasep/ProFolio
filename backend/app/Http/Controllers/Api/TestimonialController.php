@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTestimonialRequest;
 use App\Http\Requests\UpdateTestimonialRequest;
+use App\Http\Resources\TestimonialResource;
 use App\Models\Testimonial;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class TestimonialController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Testimonials retrieved successfully.',
-            'data' => $testimonials,
+            'data' => TestimonialResource::collection($testimonials),
         ]);
     }
 
@@ -35,7 +36,7 @@ class TestimonialController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Testimonial created successfully.',
-            'data' => $testimonial,
+            'data' => new TestimonialResource($testimonial),
         ], 201);
     }
 
@@ -47,7 +48,7 @@ class TestimonialController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Testimonial retrieved successfully.',
-            'data' => $testimonial,
+            'data' => new TestimonialResource($testimonial),
         ]);
     }
 
@@ -61,7 +62,7 @@ class TestimonialController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Testimonial updated successfully.',
-            'data' => $testimonial->fresh(),
+            'data' => new TestimonialResource($testimonial->fresh()),
         ]);
     }
 
@@ -75,6 +76,7 @@ class TestimonialController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Testimonial deleted successfully.',
+            'data' => null,
         ]);
     }
 }
