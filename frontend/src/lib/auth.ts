@@ -7,7 +7,7 @@ import type { LoginCredentials, LoginResponse, MeResponse, User } from '@/types/
  * Login
  */
 export async function login(credentials: LoginCredentials): Promise<User> {
-  const response = await api.post<LoginResponse>('/api/login', credentials);
+  const response = await api.post<LoginResponse>('/login', credentials);
 
   const { user, token } = response.data.data;
 
@@ -20,7 +20,7 @@ export async function login(credentials: LoginCredentials): Promise<User> {
  * Get authenticated user
  */
 export async function getCurrentUser(): Promise<User> {
-  const response = await api.get<MeResponse>('/api/me');
+  const response = await api.get<MeResponse>('/me');
 
   return response.data.data;
 }
@@ -30,7 +30,7 @@ export async function getCurrentUser(): Promise<User> {
  */
 export async function logout(): Promise<void> {
   try {
-    await api.post('/api/logout');
+    await api.post('/logout');
   } finally {
     tokenStorage.remove();
   }

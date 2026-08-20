@@ -2,12 +2,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import type { PortfolioProject } from '@/types/portfolio';
+import { getStorageUrl } from '@/lib/utils';
 
 interface ProjectCardProps {
   project: PortfolioProject;
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const thumbnailUrl = getStorageUrl(project.thumbnail);
+
   return (
     <Link
       href={`/portfolio/${project.slug}`}
@@ -25,10 +28,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
       />
 
       {/* Thumbnail */}
-      <div className='relative aspect-4/3 overflow-hidden bg-paper'>
-        {project.thumbnail ? (
+      <div className='relative aspect-[4/3] overflow-hidden bg-paper'>
+        {thumbnailUrl ? (
           <Image
-            src={project.thumbnail}
+            src={thumbnailUrl}
             alt={project.title}
             fill
             sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw'
@@ -42,10 +45,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
         )}
 
-        {/* Overlay */}
-        <div className='absolute inset-0 bg-ink/0 transition-colors duration-300 group-hover:bg-ink/10' />
+        <div
+          aria-hidden='true'
+          className='absolute inset-0 bg-ink/0 transition-colors duration-300 group-hover:bg-ink/10'
+        />
 
-        {/* Category */}
         <div className='absolute bottom-3 left-3'>
           <span className='border border-white/30 bg-ink/60 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-white backdrop-blur-sm'>
             {project.category}

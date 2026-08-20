@@ -4,15 +4,11 @@ import { twMerge } from 'tailwind-merge';
 
 /**
  * Merge Tailwind CSS classes.
- * Digunakan oleh shadcn/ui.
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/**
- * Standard Laravel API error response.
- */
 interface ApiErrorResponse {
   success?: boolean;
   message?: string;
@@ -20,31 +16,125 @@ interface ApiErrorResponse {
 }
 
 /**
- * Get readable error message from API request.
+ * Apakah detail error teknis boleh ditampilkan.
  */
-export function getApiErrorMessage(error: unknown, fallback = 'Terjadi kesalahan.'): string {
-  if (axios.isAxiosError<ApiErrorResponse>(error)) {
-    const response = error.response?.data;
+function shouldShowErrorDetails(): boolean {
+  return process.env.NEXT_PUBLIC_SHOW_ERROR_DETAILS === 'true';
+}
 
-    if (response?.message) {
-      return response.message;
-    }
+/**
+ * Pesan berdasarkan HTTP status.
+ *
+ * Pesan ini ditujukan untuk UI,
+ * bukan pesan mentah dari backend.
+ */
+function getHttpErrorMessage(status: number): string {
+  switch (status) {
+    case 400:
+      return 'Permintaan tidak valid.';
 
-    if (response?.errors) {
-      const firstError = Object.values(response.errors)[0]?.[0];
+    case 401:
+      return 'Sesi login tidak valid. Silakan login kembali.';
 
-      if (firstError) {
-        return firstError;
-      }
-    }
+    case 403:
+      return 'Anda tidak memiliki izin untuk mengakses resource ini.';
 
-    if (error.message) {
+    case 404:
+      return 'Data atau resource yang diminta tidak ditemukan.';
+
+    case 409:
+      return 'Data sudah digunakan atau terjadi konflik.';
+
+    case 422:
+      return 'Data yang dikirim tidak valid.';
+
+    case 429:
+      return 'Terlalu banyak permintaan. Silakan coba lagi nanti.';
+
+    case 500:
+      return 'Terjadi kesalahan pada server.';
+
+    case 502:
+    case 503:
+    case 504:
+      return 'Server sedang tidak dapat melayani permintaan.';
+
+    default:
+      return 'Terjadi kesalahan. Silakan coba lagi.';
+  }
+}
+
+/**
+ * Get readable API error message.
+ *
+ * Development:
+ * - tetap dapat menampilkan detail teknis.
+ *
+ * Production:
+ * - hanya menampilkan pesan yang aman untuk pengguna.
+ */
+export function getApiErrorMessage(
+  error: unknown,
+  fallback = 'Terjadi kesalahan. Silakan coba lagi.',
+): string {
+  const showDetails = shouldShowErrorDetails();
+
+  if (!axios.isAxiosError<ApiErrorResponse>(error)) {
+    if (showDetails && error instanceof Error) {
       return error.message;
+    }
+
+    return fallback;
+  }
+
+  const response = error.response;
+  const status = response?.status;
+  const data = response?.data;
+
+  /*
+   * Development:
+   * tampilkan detail validation dari Laravel.
+   */
+  if (showDetails && data?.errors) {
+    const firstError = Object.values(data.errors)[0]?.[0];
+
+    if (firstError) {
+      return firstError;
     }
   }
 
-  if (error instanceof Error) {
-    return error.message;
+  /*
+   * HTTP response tersedia.
+   */
+  if (status) {
+    const statusMessage = getHttpErrorMessage(status);
+
+    /*
+     * Untuk development, tambahkan informasi
+     * teknis HTTP tanpa menampilkan pesan backend
+     * seperti "Endpoint atau resource tidak ditemukan."
+     */
+    if (showDetails) {
+      return `${statusMessage} (HTTP ${status}).`;
+    }
+
+    return statusMessage;
+  }
+
+  /*
+   * Request tidak mendapatkan response.
+   * Contoh:
+   * - Laravel mati
+   * - CORS
+   * - network error
+   * - connection refused
+   */
+  if (axios.isAxiosError(error)) {
+    if (showDetails) {
+      return error.message;
+    }
+
+    return 'Tidak dapat terhubung ke server. Silakan coba lagi.';
   }
 
   return fallback;
@@ -62,7 +152,7 @@ export function slugify(text: string): string {
 }
 
 /**
- * Format Laravel timestamp for Indonesian locale.
+ * Format Laravel timestamp.
  */
 export function formatDate(value: string | null | undefined): string {
   if (!value) {
@@ -80,4 +170,36 @@ export function formatDate(value: string | null | undefined): string {
     month: 'short',
     year: 'numeric',
   }).format(date);
+}
+
+/**
+ * Convert Laravel storage path
+ * into a usable frontend URL.
+ */
+export function getStorageUrl(path: string | null | undefined): string | null {
+  if (!path) {
+    return null;
+  }
+
+  const value = path.trim();
+
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value;
+  }
+
+  if (value.startsWith('/')) {
+    return value;
+  }
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '');
+
+  if (!apiUrl) {
+    return `/${value}`;
+  }
+
+  return `${apiUrl}/storage/${value.replace(/^\/+/, '')}`;
 }

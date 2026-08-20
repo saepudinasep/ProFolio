@@ -1,7 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 
+import { getStorageUrl } from '@/lib/utils';
 import { useApi } from '@/hooks/useApi';
 
 import { Button } from '@/components/ui/button';
@@ -12,32 +14,31 @@ import type { PortfolioProject } from '@/types/portfolio';
 import type { Service } from '@/types/service';
 import type { Testimonial } from '@/types/testimonial';
 import type { TeamMember } from '@/types/team-member';
-import Image from 'next/image';
 
 export default function DashboardOverviewPage() {
   const {
     items: projects,
     loading: loadingProjects,
     error: projectsError,
-  } = useApi<PortfolioProject>('portfolio-projects');
+  } = useApi<PortfolioProject>('admin/portfolio-projects');
 
   const {
     items: services,
     loading: loadingServices,
     error: servicesError,
-  } = useApi<Service>('services');
+  } = useApi<Service>('admin/services');
 
   const {
     items: testimonials,
     loading: loadingTestimonials,
     error: testimonialsError,
-  } = useApi<Testimonial>('testimonials');
+  } = useApi<Testimonial>('admin/testimonials');
 
   const {
     items: team,
     loading: loadingTeam,
     error: teamError,
-  } = useApi<TeamMember>('team-members');
+  } = useApi<TeamMember>('admin/team-members');
 
   const loading = loadingProjects || loadingServices || loadingTestimonials || loadingTeam;
 
@@ -127,43 +128,51 @@ export default function DashboardOverviewPage() {
             </thead>
 
             <tbody>
-              {recentProjects.map((project) => (
-                <tr key={project.id} className='border-b border-line last:border-0'>
-                  <td className='px-5 py-3'>
-                    <div className='relative h-10 w-14 overflow-hidden border border-line bg-ink-panel'>
-                      {project.thumbnail ? (
-                        <Image
-                          src={project.thumbnail}
-                          alt={project.title}
-                          fill
-                          sizes='56px'
-                          className='object-cover'
-                        />
-                      ) : (
-                        <div className='flex h-full items-center justify-center font-mono text-[8px] uppercase tracking-wider text-paper/50'>
-                          No Image
-                        </div>
+              {recentProjects.map((project) => {
+                const thumbnailUrl = getStorageUrl(project.thumbnail);
+
+                return (
+                  <tr key={project.id} className='border-b border-line last:border-0'>
+                    {/* Preview */}
+                    <td className='px-5 py-3'>
+                      <div className='relative h-10 w-14 overflow-hidden border border-line bg-ink-panel'>
+                        {thumbnailUrl ? (
+                          <Image
+                            src={thumbnailUrl}
+                            alt={project.title}
+                            fill
+                            sizes='56px'
+                            className='object-cover'
+                          />
+                        ) : (
+                          <div className='flex h-full items-center justify-center font-mono text-[8px] uppercase tracking-wider text-paper/50'>
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Project */}
+                    <td className='px-5 py-3'>
+                      <p className='font-medium'>{project.title}</p>
+
+                      {project.client && (
+                        <p className='mt-0.5 text-xs text-ink-soft'>{project.client}</p>
                       )}
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className='px-5 py-3'>
-                    <p className='font-medium'>{project.title}</p>
+                    {/* Category */}
+                    <td className='px-5 py-3 text-ink-soft'>{project.category}</td>
 
-                    {project.client && (
-                      <p className='mt-0.5 text-xs text-ink-soft'>{project.client}</p>
-                    )}
-                  </td>
-
-                  <td className='px-5 py-3 text-ink-soft'>{project.category}</td>
-
-                  <td className='px-5 py-3 text-right'>
-                    <Button asChild variant='outline' size='sm'>
-                      <Link href={`/dashboard/portfolio-projects/${project.id}/edit`}>Edit</Link>
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+                    {/* Action */}
+                    <td className='px-5 py-3 text-right'>
+                      <Button asChild variant='outline' size='sm'>
+                        <Link href={`/dashboard/portfolio-projects/${project.id}/edit`}>Edit</Link>
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
 
               {!loading && recentProjects.length === 0 && (
                 <tr>

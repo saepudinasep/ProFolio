@@ -79,4 +79,15 @@ class PortfolioProjectController extends Controller
             'data' => null,
         ]);
     }
+
+    public function showBySlug(string $slug): JsonResponse
+    {
+        $project = PortfolioProject::where('slug', $slug)->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Portfolio project retrieved successfully.',
+            'data' => new PortfolioProjectResource($project),
+        ]);
+    }
 }

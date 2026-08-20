@@ -40,8 +40,8 @@ Route::get(
 );
 
 Route::get(
-    '/portfolio-projects/{portfolioProject}',
-    [PortfolioProjectController::class, 'show']
+    '/portfolio-projects/{slug}',
+    [PortfolioProjectController::class, 'showBySlug']
 );
 
 Route::get(
