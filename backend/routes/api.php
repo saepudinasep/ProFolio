@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ContactMessageController;
 use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\PortfolioProjectController;
 use App\Http\Controllers\Api\ServiceController;
@@ -61,6 +62,11 @@ Route::get(
 Route::get(
     '/team-members/{teamMember}',
     [TeamMemberController::class, 'show']
+);
+
+Route::post(
+    '/contact-messages',
+    [ContactMessageController::class, 'store']
 );
 
 /*
