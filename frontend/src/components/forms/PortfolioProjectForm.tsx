@@ -7,6 +7,7 @@ import type { PortfolioProject, PortfolioProjectPayload } from '@/types/portfoli
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+
 import {
   Select,
   SelectContent,
@@ -14,17 +15,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
 import { Button } from '@/components/ui/button';
 
 import { slugify } from '@/lib/utils';
+import { useApi } from '@/hooks/useApi';
 
 interface PortfolioProjectFormProps {
   initial?: Partial<PortfolioProject>;
   onSubmit: (data: PortfolioProjectPayload) => Promise<void>;
   submitLabel?: string;
 }
-
-const categoryOptions = ['Web App', 'Mobile App', 'Website', 'E-Commerce', 'Branding', 'Other'];
 
 export function PortfolioProjectForm({
   initial,
@@ -33,7 +34,7 @@ export function PortfolioProjectForm({
 }: PortfolioProjectFormProps) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [slug, setSlug] = useState(initial?.slug ?? '');
-  const [category, setCategory] = useState(initial?.category ?? 'Web App');
+  const [category, setCategory] = useState(initial?.category ?? '');
   const [client, setClient] = useState(initial?.client ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [thumbnail, setThumbnail] = useState(initial?.thumbnail ?? '');
@@ -41,8 +42,58 @@ export function PortfolioProjectForm({
 
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Ambil portfolio dari API.
+   *
+   * Endpoint ini mengambil data dari:
+   * portfolio_projects
+   */
+  const {
+    items: projects,
+    loading: categoriesLoading,
+    error: categoriesError,
+  } = useApi<PortfolioProject>('portfolio-projects');
+
+  /**
+   * Ambil category dari database.
+   *
+   * Contoh:
+   *
+   * Web App
+   * Mobile App
+   * Website
+   * Web App
+   * Branding
+   *
+   * menjadi:
+   *
+   * Web App
+   * Mobile App
+   * Website
+   * Branding
+   */
+  const categoryOptions = Array.from(
+    new Set(
+      projects
+        .map((project) => project.category?.trim())
+        .filter((category): category is string => Boolean(category)),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+
+  /**
+   * Jika sedang edit dan category lama
+   * belum ada di hasil API, tetap tampilkan.
+   */
+  const availableCategories = Array.from(
+    new Set([...categoryOptions, ...(initial?.category ? [initial.category] : [])]),
+  ).sort((a, b) => a.localeCompare(b));
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!category) {
+      return;
+    }
 
     setLoading(true);
 
@@ -63,6 +114,7 @@ export function PortfolioProjectForm({
 
   return (
     <form onSubmit={handleSubmit} className='max-w-2xl space-y-5'>
+      {/* Judul */}
       <Field label='Judul Project'>
         <Input
           id='title'
@@ -84,6 +136,7 @@ export function PortfolioProjectForm({
         />
       </Field>
 
+      {/* Slug */}
       <Field label='Slug'>
         <Input
           id='slug'
@@ -97,21 +150,40 @@ export function PortfolioProjectForm({
         />
       </Field>
 
+      {/* Category + Client */}
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <Field label='Kategori'>
-          <Select value={category} onValueChange={setCategory} disabled={loading}>
+          <Select
+            value={category}
+            onValueChange={setCategory}
+            disabled={loading || categoriesLoading}
+          >
             <SelectTrigger className='w-full'>
-              <SelectValue placeholder='Pilih kategori' />
+              <SelectValue
+                placeholder={categoriesLoading ? 'Memuat kategori...' : 'Pilih kategori'}
+              />
             </SelectTrigger>
 
             <SelectContent>
-              {categoryOptions.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
+              {availableCategories.length > 0 ? (
+                availableCategories.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value='__empty' disabled>
+                  Belum ada kategori
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
+
+          {categoriesError && <p className='mt-1.5 text-xs text-redline'>Gagal memuat kategori.</p>}
+
+          {!categoriesLoading && !categoriesError && availableCategories.length === 0 && (
+            <p className='mt-1.5 text-xs text-ink-soft'>Belum ada kategori dari project.</p>
+          )}
         </Field>
 
         <Field label='Client'>
@@ -127,6 +199,7 @@ export function PortfolioProjectForm({
         </Field>
       </div>
 
+      {/* Deskripsi */}
       <Field label='Deskripsi'>
         <Textarea
           id='description'
@@ -140,6 +213,7 @@ export function PortfolioProjectForm({
         />
       </Field>
 
+      {/* Thumbnail */}
       <Field label='Thumbnail'>
         <Input
           id='thumbnail'
@@ -152,6 +226,7 @@ export function PortfolioProjectForm({
         />
       </Field>
 
+      {/* URL */}
       <Field label='URL Project'>
         <Input
           id='project_url'
@@ -164,7 +239,8 @@ export function PortfolioProjectForm({
         />
       </Field>
 
-      <Button type='submit' disabled={loading}>
+      {/* Submit */}
+      <Button type='submit' disabled={loading || categoriesLoading || !category}>
         {loading ? 'Menyimpan...' : submitLabel}
       </Button>
     </form>
