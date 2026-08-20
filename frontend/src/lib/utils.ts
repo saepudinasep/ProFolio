@@ -37,6 +37,10 @@ export function getApiErrorMessage(error: unknown, fallback = 'Terjadi kesalahan
         return firstError;
       }
     }
+
+    if (error.message) {
+      return error.message;
+    }
   }
 
   if (error instanceof Error) {
@@ -46,10 +50,34 @@ export function getApiErrorMessage(error: unknown, fallback = 'Terjadi kesalahan
   return fallback;
 }
 
-export function slugify(text: string) {
+/**
+ * Create URL-friendly slug.
+ */
+export function slugify(text: string): string {
   return text
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
+}
+
+/**
+ * Format Laravel timestamp for Indonesian locale.
+ */
+export function formatDate(value: string | null | undefined): string {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
 }
