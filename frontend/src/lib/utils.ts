@@ -45,3 +45,11 @@ export function getApiErrorMessage(error: unknown, fallback = 'Terjadi kesalahan
 
   return fallback;
 }
+
+export function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+}
