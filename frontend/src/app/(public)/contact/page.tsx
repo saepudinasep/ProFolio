@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Mail, MapPin, Phone, type LucideIcon } from 'lucide-react';
+import { LocationMap } from '@/components/public/LocationMapClient';
 
 import { Navbar } from '@/components/public/Navbar';
 import { Footer } from '@/components/public/Footer';
@@ -68,10 +69,8 @@ export default function ContactPage() {
 
             {/* Contact information */}
             <div>
-              <div className='grid-paper flex aspect-4/3 items-center justify-center border border-line'>
-                <span className='font-mono text-[11px] uppercase tracking-wider text-ink-soft'>
-                  Peta Lokasi
-                </span>
+              <div className='aspect-4/3 overflow-hidden border border-line'>
+                <LocationMap latitude={-6.267} longitude={106.806} zoom={14} />
               </div>
 
               <ul className='mt-6 space-y-5'>
