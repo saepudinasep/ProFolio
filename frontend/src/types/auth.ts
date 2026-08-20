@@ -27,9 +27,7 @@ export interface LoginResponse {
 export interface MeResponse {
   success: boolean;
   message: string;
-  data: {
-    user: User;
-  };
+  data: User;
 }
 
 export interface ApiResponse<T = unknown> {

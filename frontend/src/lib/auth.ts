@@ -9,7 +9,7 @@ import type { LoginCredentials, LoginResponse, MeResponse, User } from '@/types/
 export async function login(credentials: LoginCredentials): Promise<User> {
   const response = await api.post<LoginResponse>('/api/login', credentials);
 
-  const { token, user } = response.data.data;
+  const { user, token } = response.data.data;
 
   tokenStorage.set(token);
 
@@ -22,7 +22,7 @@ export async function login(credentials: LoginCredentials): Promise<User> {
 export async function getCurrentUser(): Promise<User> {
   const response = await api.get<MeResponse>('/api/me');
 
-  return response.data.data.user;
+  return response.data.data;
 }
 
 /**
@@ -37,14 +37,14 @@ export async function logout(): Promise<void> {
 }
 
 /**
- * Check token existence
+ * Check whether authentication token exists.
  */
 export function isAuthenticated(): boolean {
   return tokenStorage.get() !== null;
 }
 
 /**
- * Get stored token
+ * Get stored authentication token.
  */
 export function getToken(): string | null {
   return tokenStorage.get();

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import {
   getCurrentUser,
@@ -31,51 +31,59 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
-
   const [loading, setLoading] = useState(true);
 
-  const authenticated = user !== null;
-
   /**
-   * Load authenticated user
+   * Check whether user is authenticated
+   * and retrieve current user from Laravel API.
    */
-  const refreshUser = async () => {
-    try {
-      if (!isAuthenticated()) {
-        setUser(null);
-        return;
-      }
+  const refreshUser = useCallback(async (): Promise<void> => {
+    if (!isAuthenticated()) {
+      setUser(null);
+      return;
+    }
 
+    try {
       const currentUser = await getCurrentUser();
 
       setUser(currentUser);
     } catch {
+      /**
+       * Token may be expired, revoked,
+       * or no longer valid.
+       */
       setUser(null);
     }
-  };
+  }, []);
 
   /**
-   * Login
+   * Login user.
    */
-  const login = async (credentials: LoginCredentials) => {
+  const login = useCallback(async (credentials: LoginCredentials): Promise<User> => {
     const currentUser = await loginRequest(credentials);
 
     setUser(currentUser);
 
     return currentUser;
-  };
+  }, []);
 
   /**
-   * Logout
+   * Logout current user.
    */
-  const logout = async () => {
-    await logoutRequest();
-
-    setUser(null);
-  };
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      await logoutRequest();
+    } finally {
+      /**
+       * Always clear local authentication state,
+       * even if Laravel logout request fails.
+       */
+      setUser(null);
+    }
+  }, []);
 
   /**
-   * Initial authentication check
+   * Initialize authentication state.
    */
   useEffect(() => {
     const initializeAuth = async () => {
@@ -86,8 +94,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     };
 
-    initializeAuth();
-  }, []);
+    void initializeAuth();
+  }, [refreshUser]);
+
+  const authenticated = user !== null;
 
   return (
     <AuthContext.Provider
@@ -108,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
 
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within AuthProvider');
   }
 
