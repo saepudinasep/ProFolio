@@ -1,15 +1,16 @@
 import type { Metadata } from 'next';
-import './globals.css';
 
 import { AuthProvider } from '@/hooks/useAuth';
-import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'ProFolio',
-  description: 'Professional Portfolio Platform',
+  title: {
+    default: 'ProFolio — Studio Pengembangan Produk Digital',
+    template: '%s | ProFolio',
+  },
+  description:
+    'ProFolio membangun web, aplikasi mobile, dan identitas brand untuk bisnis yang ingin tumbuh lewat produk digital.',
 };
 
 export default function RootLayout({
@@ -18,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='id' className={cn("font-sans", geist.variable)}>
-      <body>
+    <html lang='id'>
+      <body className='antialiased'>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
