@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+
+import { createContactMessage } from '@/lib/contact';
+import { getApiErrorMessage } from '@/lib/utils';
 
 interface ContactFormData {
   name: string;
@@ -25,8 +28,10 @@ const initialForm: ContactFormData = {
 
 export function ContactForm() {
   const [form, setForm] = useState<ContactFormData>(initialForm);
+
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function updateField(field: keyof ContactFormData, value: string) {
     setForm((current) => ({
@@ -35,18 +40,25 @@ export function ContactForm() {
     }));
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    setError(null);
     setLoading(true);
 
     try {
-      // Untuk sementara simulasi pengiriman.
-      // Nanti diganti dengan API contact_messages Laravel.
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await createContactMessage({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || null,
+        subject: form.subject.trim() || null,
+        message: form.message.trim(),
+      });
 
-      setSent(true);
       setForm(initialForm);
+      setSent(true);
+    } catch (error: unknown) {
+      setError(getApiErrorMessage(error, 'Pesan gagal dikirim. Silakan coba lagi.'));
     } finally {
       setLoading(false);
     }
@@ -64,7 +76,15 @@ export function ContactForm() {
           kerja.
         </p>
 
-        <Button type='button' variant='outline' className='mt-5' onClick={() => setSent(false)}>
+        <Button
+          type='button'
+          variant='outline'
+          className='mt-5'
+          onClick={() => {
+            setSent(false);
+            setError(null);
+          }}
+        >
           Kirim Pesan Lagi
         </Button>
       </div>
@@ -82,6 +102,7 @@ export function ContactForm() {
           value={form.name}
           onChange={(event) => updateField('name', event.target.value)}
           placeholder='Nama lengkap'
+          disabled={loading}
         />
       </Field>
 
@@ -94,6 +115,8 @@ export function ContactForm() {
           value={form.email}
           onChange={(event) => updateField('email', event.target.value)}
           placeholder='nama@email.com'
+          autoComplete='email'
+          disabled={loading}
         />
       </Field>
 
@@ -105,6 +128,8 @@ export function ContactForm() {
           value={form.phone}
           onChange={(event) => updateField('phone', event.target.value)}
           placeholder='08xxxxxxxxxx'
+          autoComplete='tel'
+          disabled={loading}
         />
       </Field>
 
@@ -116,6 +141,7 @@ export function ContactForm() {
           value={form.subject}
           onChange={(event) => updateField('subject', event.target.value)}
           placeholder='Topik pesanmu'
+          disabled={loading}
         />
       </Field>
 
@@ -128,8 +154,18 @@ export function ContactForm() {
           value={form.message}
           onChange={(event) => updateField('message', event.target.value)}
           placeholder='Ceritakan project yang ingin kamu bangun...'
+          disabled={loading}
         />
       </Field>
+
+      {error && (
+        <div
+          role='alert'
+          className='border border-redline bg-redline-soft px-3 py-2 text-xs text-redline'
+        >
+          {error}
+        </div>
+      )}
 
       <Button type='submit' disabled={loading} className='px-6 py-3'>
         {loading ? 'Mengirim...' : 'Kirim Pesan'}
