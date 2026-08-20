@@ -15,4 +15,9 @@ class PortfolioProject extends Model
         'thumbnail',
         'project_url',
     ];
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 }
