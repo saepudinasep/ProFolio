@@ -4,6 +4,7 @@ import useSWR from 'swr';
 
 import { api } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface ApiCollectionResponse<T> {
   success: boolean;
@@ -38,9 +39,65 @@ export interface UseApiItemResult<T> {
   refetch: () => Promise<void>;
 }
 
+/**
+ * Normalisasi endpoint.
+ *
+ * Contoh:
+ *
+ * services
+ * admin/services
+ * editor/services
+ * /admin/services
+ * /editor/services
+ *
+ * semuanya akan menjadi:
+ *
+ * services
+ */
+function normalizeEndpoint(endpoint: string): string {
+  return endpoint
+    .replace(/^\/+/, '')
+    .replace(/^admin\//, '')
+    .replace(/^editor\//, '');
+}
+
+/**
+ * Tentukan prefix berdasarkan role user.
+ */
+function getRolePrefix(role: string | undefined): string | null {
+  if (role === 'admin') {
+    return 'admin';
+  }
+
+  if (role === 'editor') {
+    return 'editor';
+  }
+
+  return null;
+}
+
+/**
+ * Buat endpoint API berdasarkan role.
+ */
+function buildEndpoint(endpoint: string, role: string | undefined): string | null {
+  const prefix = getRolePrefix(role);
+
+  if (!prefix) {
+    return null;
+  }
+
+  const normalized = normalizeEndpoint(endpoint);
+
+  return `${prefix}/${normalized}`;
+}
+
 export function useApi<T>(endpoint: string): UseApiResult<T> {
+  const { user, loading: authLoading } = useAuth();
+
+  const apiEndpoint = buildEndpoint(endpoint, user?.role);
+
   const { data, error, isLoading, mutate } = useSWR<T[], Error>(
-    endpoint,
+    apiEndpoint,
     async (url: string): Promise<T[]> => {
       try {
         const response = await api.get<ApiCollectionResponse<T>>(url);
@@ -53,8 +110,12 @@ export function useApi<T>(endpoint: string): UseApiResult<T> {
   );
 
   async function create<TPayload>(payload: TPayload): Promise<void> {
+    if (!apiEndpoint) {
+      throw new Error('Role pengguna tidak valid.');
+    }
+
     try {
-      await api.post(endpoint, payload);
+      await api.post(apiEndpoint, payload);
 
       await mutate();
     } catch (error: unknown) {
@@ -63,8 +124,14 @@ export function useApi<T>(endpoint: string): UseApiResult<T> {
   }
 
   async function update<TPayload>(id: string | number, payload: TPayload): Promise<void> {
+    if (!apiEndpoint) {
+      throw new Error('Role pengguna tidak valid.');
+    }
+
+    const url = `${apiEndpoint}/` + encodeURIComponent(String(id));
+
     try {
-      await api.put(`${endpoint}/${encodeURIComponent(String(id))}`, payload);
+      await api.put(url, payload);
 
       await mutate();
     } catch (error: unknown) {
@@ -73,8 +140,14 @@ export function useApi<T>(endpoint: string): UseApiResult<T> {
   }
 
   async function remove(id: string | number): Promise<void> {
+    if (!apiEndpoint) {
+      throw new Error('Role pengguna tidak valid.');
+    }
+
+    const url = `${apiEndpoint}/` + encodeURIComponent(String(id));
+
     try {
-      await api.delete(`${endpoint}/${encodeURIComponent(String(id))}`);
+      await api.delete(url);
 
       await mutate();
     } catch (error: unknown) {
@@ -84,7 +157,9 @@ export function useApi<T>(endpoint: string): UseApiResult<T> {
 
   return {
     items: data ?? [],
-    loading: isLoading,
+
+    loading: authLoading || (!!user && !!apiEndpoint && isLoading),
+
     error: error?.message ?? null,
 
     refetch: async () => {
@@ -98,9 +173,13 @@ export function useApi<T>(endpoint: string): UseApiResult<T> {
 }
 
 export function useApiItem<T>(endpoint: string, identifier?: string | number): UseApiItemResult<T> {
+  const { user, loading: authLoading } = useAuth();
+
+  const apiEndpoint = buildEndpoint(endpoint, user?.role);
+
   const key =
-    identifier !== undefined && identifier !== null
-      ? `${endpoint}/${encodeURIComponent(String(identifier))}`
+    apiEndpoint && identifier !== undefined && identifier !== null
+      ? `${apiEndpoint}/${encodeURIComponent(String(identifier))}`
       : null;
 
   const { data, error, isLoading, mutate } = useSWR<T, Error>(
@@ -118,7 +197,9 @@ export function useApiItem<T>(endpoint: string, identifier?: string | number): U
 
   return {
     item: data ?? null,
-    loading: isLoading,
+
+    loading: authLoading || (!!user && !!key && isLoading),
+
     error: error?.message ?? null,
 
     refetch: async () => {

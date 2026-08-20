@@ -1,5 +1,4 @@
 import axios from 'axios';
-
 import { tokenStorage } from './storage';
 
 export const api = axios.create({
@@ -10,9 +9,6 @@ export const api = axios.create({
   },
 });
 
-/**
- * Attach Bearer Token to authenticated requests.
- */
 api.interceptors.request.use(
   (config) => {
     const token = tokenStorage.get();
@@ -23,18 +19,12 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error: unknown) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
-/**
- * Handle API responses.
- */
 api.interceptors.response.use(
   (response) => response,
-
-  (error: unknown) => {
+  (error) => {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       tokenStorage.remove();
     }
