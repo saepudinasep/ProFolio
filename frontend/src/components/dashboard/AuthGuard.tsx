@@ -11,6 +11,7 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading } = useAuth();
+
   const router = useRouter();
 
   useEffect(() => {
@@ -22,11 +23,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
   if (loading) {
     return (
       <div className='flex min-h-screen items-center justify-center bg-paper'>
-        <div className='text-center'>
-          <p className='font-mono text-[13px] uppercase tracking-widest text-ink-soft'>
-            Memuat sesi...
-          </p>
-        </div>
+        <p className='font-mono text-[13px] uppercase tracking-widest text-ink-soft'>
+          Memuat sesi...
+        </p>
       </div>
     );
   }

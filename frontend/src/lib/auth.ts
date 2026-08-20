@@ -1,5 +1,5 @@
 import { api } from './api';
-import { tokenStorage } from './storage';
+import { tokenStorage, userStorage } from './storage';
 
 import type { LoginCredentials, LoginResponse, MeResponse, User } from '@/types/auth';
 
@@ -12,6 +12,7 @@ export async function login(credentials: LoginCredentials): Promise<User> {
   const { user, token } = response.data.data;
 
   tokenStorage.set(token);
+  userStorage.set(user);
 
   return user;
 }
@@ -22,7 +23,11 @@ export async function login(credentials: LoginCredentials): Promise<User> {
 export async function getCurrentUser(): Promise<User> {
   const response = await api.get<MeResponse>('/me');
 
-  return response.data.data;
+  const user = response.data.data.user;
+
+  userStorage.set(user);
+
+  return user;
 }
 
 /**
@@ -33,6 +38,7 @@ export async function logout(): Promise<void> {
     await api.post('/logout');
   } finally {
     tokenStorage.remove();
+    userStorage.remove();
   }
 }
 
@@ -41,6 +47,13 @@ export async function logout(): Promise<void> {
  */
 export function isAuthenticated(): boolean {
   return tokenStorage.get() !== null;
+}
+
+/**
+ * Get cached authenticated user.
+ */
+export function getStoredUser(): User | null {
+  return userStorage.get<User>();
 }
 
 /**
