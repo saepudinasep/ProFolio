@@ -27,7 +27,10 @@ export interface UseApiResult<T> {
 
   create: <TPayload>(payload: TPayload) => Promise<void>;
 
-  update: <TPayload>(id: string | number, payload: TPayload) => Promise<void>;
+  update: <TPayload>(
+    id: string | number,
+    payload: TPayload,
+  ) => Promise<void>;
 
   remove: (id: string | number) => Promise<void>;
 }
@@ -36,13 +39,68 @@ export interface UseApiItemResult<T> {
   item: T | null;
   loading: boolean;
   error: string | null;
+
   refetch: () => Promise<void>;
 }
 
 /**
- * Normalisasi endpoint.
+ * ============================================================
+ * SWR CONFIGURATION
+ * ============================================================
  *
- * Contoh:
+ * Data CMS tidak realtime.
+ *
+ * Request dilakukan:
+ * - ketika halaman pertama kali membutuhkan data
+ * - setelah create
+ * - setelah update
+ * - setelah delete
+ * - ketika refetch() dipanggil manual
+ *
+ * Tidak dilakukan:
+ * - polling
+ * - refresh ketika pindah tab
+ * - refresh ketika koneksi kembali
+ * - retry otomatis ketika API error
+ */
+const swrConfig = {
+  /**
+   * Jangan request ulang ketika browser/window
+   * mendapatkan focus kembali.
+   */
+  revalidateOnFocus: false,
+
+  /**
+   * Jangan request ulang ketika koneksi internet
+   * kembali tersedia.
+   */
+  revalidateOnReconnect: false,
+
+  /**
+   * Tidak melakukan polling.
+   */
+  refreshInterval: 0,
+
+  /**
+   * Jika request dengan key yang sama terjadi
+   * dalam 5 detik, SWR menggunakan request/cache
+   * yang sama.
+   */
+  dedupingInterval: 5000,
+
+  /**
+   * Jangan retry request berkali-kali ketika
+   * Laravel API sedang error.
+   */
+  shouldRetryOnError: false,
+};
+
+/**
+ * ============================================================
+ * ENDPOINT ROLE
+ * ============================================================
+ *
+ * Input:
  *
  * services
  * admin/services
@@ -50,7 +108,7 @@ export interface UseApiItemResult<T> {
  * /admin/services
  * /editor/services
  *
- * semuanya akan menjadi:
+ * semuanya dinormalisasi menjadi:
  *
  * services
  */
@@ -77,9 +135,24 @@ function getRolePrefix(role: string | undefined): string | null {
 }
 
 /**
- * Buat endpoint API berdasarkan role.
+ * Buat endpoint API berdasarkan role user.
+ *
+ * Admin:
+ *
+ * services
+ * ↓
+ * admin/services
+ *
+ * Editor:
+ *
+ * services
+ * ↓
+ * editor/services
  */
-function buildEndpoint(endpoint: string, role: string | undefined): string | null {
+function buildEndpoint(
+  endpoint: string,
+  role: string | undefined,
+): string | null {
   const prefix = getRolePrefix(role);
 
   if (!prefix) {
@@ -91,80 +164,200 @@ function buildEndpoint(endpoint: string, role: string | undefined): string | nul
   return `${prefix}/${normalized}`;
 }
 
+/**
+ * ============================================================
+ * COLLECTION API
+ * ============================================================
+ */
 export function useApi<T>(endpoint: string): UseApiResult<T> {
-  const { user, loading: authLoading } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+  } = useAuth();
 
-  const apiEndpoint = buildEndpoint(endpoint, user?.role);
+  /**
+   * Endpoint otomatis berdasarkan role.
+   *
+   * Admin:
+   * /admin/services
+   *
+   * Editor:
+   * /editor/services
+   */
+  const apiEndpoint = buildEndpoint(
+    endpoint,
+    user?.role,
+  );
 
-  const { data, error, isLoading, mutate } = useSWR<T[], Error>(
-    apiEndpoint,
+  const {
+    data,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR<T[], Error>(
+    /**
+     * Jangan request sebelum user selesai
+     * diverifikasi.
+     *
+     * Kalau null, SWR tidak melakukan request.
+     */
+    !authLoading && user && apiEndpoint
+      ? apiEndpoint
+      : null,
+
     async (url: string): Promise<T[]> => {
       try {
-        const response = await api.get<ApiCollectionResponse<T>>(url);
+        const response =
+          await api.get<ApiCollectionResponse<T>>(url);
 
         return response.data.data;
       } catch (error: unknown) {
-        throw new Error(getApiErrorMessage(error, 'Gagal memuat data.'));
+        throw new Error(
+          getApiErrorMessage(
+            error,
+            'Gagal memuat data.',
+          ),
+        );
       }
     },
+
+    swrConfig,
   );
 
-  async function create<TPayload>(payload: TPayload): Promise<void> {
+  /**
+   * ==========================================================
+   * CREATE
+   * ==========================================================
+   */
+  async function create<TPayload>(
+    payload: TPayload,
+  ): Promise<void> {
     if (!apiEndpoint) {
-      throw new Error('Role pengguna tidak valid.');
+      throw new Error(
+        'Role pengguna tidak valid.',
+      );
     }
 
     try {
-      await api.post(apiEndpoint, payload);
+      await api.post(
+        apiEndpoint,
+        payload,
+      );
 
+      /**
+       * Refresh hanya setelah CREATE berhasil.
+       */
       await mutate();
     } catch (error: unknown) {
-      throw new Error(getApiErrorMessage(error, 'Gagal membuat data.'));
+      throw new Error(
+        getApiErrorMessage(
+          error,
+          'Gagal membuat data.',
+        ),
+      );
     }
   }
 
-  async function update<TPayload>(id: string | number, payload: TPayload): Promise<void> {
+  /**
+   * ==========================================================
+   * UPDATE
+   * ==========================================================
+   */
+  async function update<TPayload>(
+    id: string | number,
+    payload: TPayload,
+  ): Promise<void> {
     if (!apiEndpoint) {
-      throw new Error('Role pengguna tidak valid.');
+      throw new Error(
+        'Role pengguna tidak valid.',
+      );
     }
 
-    const url = `${apiEndpoint}/` + encodeURIComponent(String(id));
+    const url =
+      `${apiEndpoint}/` +
+      encodeURIComponent(String(id));
 
     try {
-      await api.put(url, payload);
+      await api.put(
+        url,
+        payload,
+      );
 
+      /**
+       * Refresh hanya setelah UPDATE berhasil.
+       */
       await mutate();
     } catch (error: unknown) {
-      throw new Error(getApiErrorMessage(error, 'Gagal memperbarui data.'));
+      throw new Error(
+        getApiErrorMessage(
+          error,
+          'Gagal memperbarui data.',
+        ),
+      );
     }
   }
 
-  async function remove(id: string | number): Promise<void> {
+  /**
+   * ==========================================================
+   * DELETE
+   * ==========================================================
+   */
+  async function remove(
+    id: string | number,
+  ): Promise<void> {
     if (!apiEndpoint) {
-      throw new Error('Role pengguna tidak valid.');
+      throw new Error(
+        'Role pengguna tidak valid.',
+      );
     }
 
-    const url = `${apiEndpoint}/` + encodeURIComponent(String(id));
+    const url =
+      `${apiEndpoint}/` +
+      encodeURIComponent(String(id));
 
     try {
       await api.delete(url);
 
+      /**
+       * Refresh hanya setelah DELETE berhasil.
+       */
       await mutate();
     } catch (error: unknown) {
-      throw new Error(getApiErrorMessage(error, 'Gagal menghapus data.'));
+      throw new Error(
+        getApiErrorMessage(
+          error,
+          'Gagal menghapus data.',
+        ),
+      );
     }
+  }
+
+  /**
+   * ==========================================================
+   * MANUAL REFETCH
+   * ==========================================================
+   */
+  async function refetch(): Promise<void> {
+    await mutate();
   }
 
   return {
     items: data ?? [],
 
-    loading: authLoading || (!!user && !!apiEndpoint && isLoading),
+    /**
+     * Loading ketika:
+     *
+     * 1. Auth masih diperiksa
+     * 2. User sudah tersedia dan API sedang loading
+     */
+    loading:
+      authLoading ||
+      (!!user && !!apiEndpoint && isLoading),
 
-    error: error?.message ?? null,
+    error:
+      error?.message ?? null,
 
-    refetch: async () => {
-      await mutate();
-    },
+    refetch,
 
     create,
     update,
@@ -172,38 +365,92 @@ export function useApi<T>(endpoint: string): UseApiResult<T> {
   };
 }
 
-export function useApiItem<T>(endpoint: string, identifier?: string | number): UseApiItemResult<T> {
-  const { user, loading: authLoading } = useAuth();
+/**
+ * ============================================================
+ * SINGLE ITEM API
+ * ============================================================
+ */
+export function useApiItem<T>(
+  endpoint: string,
+  identifier?: string | number,
+): UseApiItemResult<T> {
+  const {
+    user,
+    loading: authLoading,
+  } = useAuth();
 
-  const apiEndpoint = buildEndpoint(endpoint, user?.role);
+  /**
+   * Endpoint berdasarkan role.
+   */
+  const apiEndpoint = buildEndpoint(
+    endpoint,
+    user?.role,
+  );
 
+  /**
+   * Contoh admin:
+   *
+   * admin/portfolio-projects/1
+   *
+   * Contoh editor:
+   *
+   * editor/portfolio-projects/1
+   */
   const key =
-    apiEndpoint && identifier !== undefined && identifier !== null
-      ? `${apiEndpoint}/${encodeURIComponent(String(identifier))}`
+    !authLoading &&
+    user &&
+    apiEndpoint &&
+    identifier !== undefined &&
+    identifier !== null
+      ? `${apiEndpoint}/${encodeURIComponent(
+          String(identifier),
+        )}`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<T, Error>(
+  const {
+    data,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR<T, Error>(
     key,
+
     async (url: string): Promise<T> => {
       try {
-        const response = await api.get<ApiItemResponse<T>>(url);
+        const response =
+          await api.get<ApiItemResponse<T>>(url);
 
         return response.data.data;
       } catch (error: unknown) {
-        throw new Error(getApiErrorMessage(error, 'Gagal memuat data.'));
+        throw new Error(
+          getApiErrorMessage(
+            error,
+            'Gagal memuat data.',
+          ),
+        );
       }
     },
+
+    swrConfig,
   );
+
+  /**
+   * Manual refetch item.
+   */
+  async function refetch(): Promise<void> {
+    await mutate();
+  }
 
   return {
     item: data ?? null,
 
-    loading: authLoading || (!!user && !!key && isLoading),
+    loading:
+      authLoading ||
+      (!!user && !!key && isLoading),
 
-    error: error?.message ?? null,
+    error:
+      error?.message ?? null,
 
-    refetch: async () => {
-      await mutate();
-    },
+    refetch,
   };
 }

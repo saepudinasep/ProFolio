@@ -1,3 +1,5 @@
+import { GuestHomeRedirect } from '@/components/auth/GuestHomeRedirect';
+
 import { FeaturedWork } from '@/components/public/FeaturedWork';
 import { Footer } from '@/components/public/Footer';
 import { Hero } from '@/components/public/Hero';
@@ -8,19 +10,21 @@ import { Testimonials } from '@/components/public/Testimonials';
 export default function HomePage() {
   return (
     <>
-      <Navbar />
+      <GuestHomeRedirect>
+        <Navbar />
 
-      <main>
-        <Hero />
+        <main>
+          <Hero />
 
-        <Services />
+          <Services />
 
-        <FeaturedWork />
+          <FeaturedWork />
 
-        <Testimonials />
-      </main>
+          <Testimonials />
+        </main>
 
-      <Footer />
+        <Footer />
+      </GuestHomeRedirect>
     </>
   );
 }
